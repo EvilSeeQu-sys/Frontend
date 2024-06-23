@@ -1,20 +1,22 @@
+def imageName="EvilSeeQu-sys/Frontend"
+def dockerRegistry=""
+def registryCredentials="dockerhub"
+def dockerTag=""
+
 pipeline {
     agent {
         label 'agent'
     }
 
     environment {
-        PIP_BREAK_SYSTEM_PACKAGES = 1
         scannerHome = tool 'SonarQube'
-        dockerRegistry = ''
-        registryCredentials = 'dockerhub'
-        imageName = "evilseequsys/frontend"
+        PIP_BREAK_SYSTEM_PACKAGES = 1
     }
 
     stages {
         stage('Get Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/EvilSeeQu-sys/Frontend'
+                checkout scm // Get some code from a GitHub repository
             }
         }
 
@@ -33,41 +35,34 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build application image') {
             steps {
                 script {
-                    dockerTag = "RC-${env.BUILD_NUMBER}"
-                    def dockerfileContent = """
-                    FROM python:3.9-slim
-                    WORKDIR /app
-                    COPY requirements.txt .
-                    RUN pip install -r requirements.txt
-                    COPY . .
-                    CMD ["python3", "app.py"]
-                    """
-                    writeFile file: 'Dockerfile', text: dockerfileContent
-                    sh "docker build -t ${imageName}:${dockerTag} ."
-                    sh "docker tag ${imageName}:${dockerTag} ${imageName}:latest"
+                  // Prepare basic image for application
+                  dockerTag = "RC-${env.BUILD_ID}.${env.GIT_COMMIT.take(7)}"
+                  applicationImage = docker.build("$imageName:$dockerTag",".")
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage ('Pushing image to docker registry') {
             steps {
                 script {
-                    docker.withRegistry("http://${dockerRegistry}", "$registryCredentials") {
-                        sh "docker push ${imageName}:${dockerTag}"
-                        sh "docker push ${imageName}:latest"
+                    docker.withRegistry("$dockerRegistry", "$registryCredentials") {
+                        applicationImage.push()
+                        applicationImage.push('latest')
                     }
                 }
             }
         }
     }
-    
     post {
         always {
-            junit 'test-results/*.xml'
+            junit testResults: "test-results/*.xml"
             cleanWs()
+        }
+        success {
+            build job: 'app_of_apps', parameters: [ string(name: 'frontendDockerTag', value: "$dockerTag")], wait: false
         }
     }
 }
