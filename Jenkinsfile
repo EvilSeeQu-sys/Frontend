@@ -55,7 +55,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry("http://${dockerRegistry}", "$registryCredentials") {
+                    docker.withRegistry("${dockerRegistry}", "$registryCredentials") {
                         sh "docker push ${imageName}:${dockerTag}"
                         sh "docker push ${imageName}:latest"
                     }
