@@ -6,7 +6,7 @@ pipeline {
     environment {
         PIP_BREAK_SYSTEM_PACKAGES = 1
         scannerHome = tool 'SonarQube'
-        dockerRegistry = ""
+        dockerRegistry = "https://index.docker.io/v1/"
         registryCredentials = "dockerhub"
         imageName = "evilseequsys/frontend"
     }
