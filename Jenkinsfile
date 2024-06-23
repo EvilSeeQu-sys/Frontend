@@ -6,9 +6,9 @@ pipeline {
     environment {
         PIP_BREAK_SYSTEM_PACKAGES = 1
         scannerHome = tool 'SonarQube'
-        dockerRegistry = '192.168.56.115:8082'
-        registryCredentials = 'artifactory'
-        imageName = "${dockerRegistry}/docker-local/frontend2"
+        dockerRegistry = ''
+        registryCredentials = 'dockerhub'
+        imageName = "evilseequsys/frontend"
     }
 
     stages {
